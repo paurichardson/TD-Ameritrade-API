@@ -212,6 +212,24 @@ class TDAmeritrade:
                 }
             ]
         }
+#        {
+#  "orderType": "LIMIT",
+#  "session": "NORMAL",
+#  "duration": "DAY",
+#  "orderStrategyType": "SINGLE",
+#  "price": 170,
+#  "orderLegCollection": [
+#    {
+#      "instruction": "Buy",
+#      "quantity": 15,
+#      "instrument": {
+#        "symbol": "QQQ",
+#        "assetType": "EQUITY"
+#      }
+#    }
+#  ]
+#}
+        print(data)
         self._send_request(url, data=data)
 
     def get_price_history(self, symbol=None, period_type="month", period="3", frequency_type="daily",\
@@ -225,8 +243,8 @@ class TDAmeritrade:
             url = "marketdata/{}/pricehistory?periodType={}&&frequencyType={}&frequency={}&endDate={}&startDate={}&needExtendedHoursData={}"\
                 .format(symbol, period_type, frequency_type, frequency, end_date, start_date, extended_hours)
         self._send_request(url)
-        data = np.array([[datetime.fromtimestamp(t["datetime"]/1000.).date,
-                          t["open"], t["high"], t["low"], t["close"], t["volume"]]
+        data = np.array([[datetime.fromtimestamp(t["datetime"]/1000.).date(),
+                          t["open_price"], t["high"], t["low"], t["close_price"], t["volume"]]
                          for t in self.message["candles"]])
         data = pd.DataFrame(index=data[:, 0],
                             columns=["open", "high", "low", "close", "volume"],
@@ -252,10 +270,10 @@ def test():
     #print(app.get_commission_free_etfs())
     #print(app.get_recent_transactions())
     #print(app.get_recent_orders())
-    #app.create_saved_order(symbol="SPYG", price=1, quantity=1, instruction="BUY")
-    print(app.get_price_history(symbol="SPYV"))
+    #app.create_saved_order(symbol="SPYG", price=1, quantity=1, instruction="Buy")
+    #print(app.get_price_history(symbol="SPYV"))
     #app.get_quotes(["SPYV", "SPYG"])
-    #app.place_order(symbol="SPYG", price=1, quantity=1, instruction="BUY")
+    app.place_order(symbol="SPYV", price=20.16, quantity=2, instruction="Buy")
     #print(app.message)
 
 if __name__ == "__main__":
