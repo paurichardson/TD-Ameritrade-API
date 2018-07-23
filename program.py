@@ -4,10 +4,10 @@ Example to retrieve data from TD Ameritrade API
 import urllib.request
 import time
 import json
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 from pdb import set_trace
+import numpy as np
+import pandas as pd
 
 
 def dump_message(fn):
@@ -239,7 +239,6 @@ class TDAmeritrade:
         symbol_url = "%2C".join(symbols)
         url = "marketdata/quotes?symbol={}".format(symbol_url)
         self._send_request(url)
-
 
 def test():
     """Run tests.
