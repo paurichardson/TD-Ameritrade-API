@@ -3,6 +3,7 @@ Example to retrieve data from TD Ameritrade API
 """
 import urllib.request
 import time
+import logging
 import json
 import numpy as np
 import pandas as pd
@@ -15,7 +16,8 @@ def dump_message(fn):
     Useful for debugging the message parser.
     """
     def wrapper(self, url, data=None):
-        fn(self, url)
+        fn(self, url, data)
+
         with open("message.txt", mode='w') as file_obj:
             file_obj.writelines(json.dumps(self.message))
 
@@ -27,10 +29,28 @@ class TDAmeritrade:
     def __init__(self, filename_account, filename_oauth):
         """Get account information.
         """
+        self._setup_logging()
         self.account_no = self.get_account_number(filename_account)
         self.oauth_hash = self.get_oauth_hash(filename_oauth)
 
         self.message = None
+
+    def _setup_logging(self):
+        """Set up a logger.
+        """
+        # create logger with 'spam_application'
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler('tdameritrade.log')
+        fh.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.ERROR)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.addHandler(ch)
+        self._logger = logger
 
     @staticmethod
     def get_account_number(filename):
@@ -50,23 +70,32 @@ class TDAmeritrade:
         oauth_hash = oauth_hash.rstrip("\n")
         return oauth_hash
 
-    @dump_message
+#    @print_message
     def _send_request(self, url, data=None):
         """Send the request based on the base url plus the supplied url.
         """
         base_url = "https://api.tdameritrade.com/v1/"
         url = base_url + url
-        print(url)
         request = urllib.request.Request(url)
         request.add_header("Authorization", "Bearer {}".format(self.oauth_hash).encode("utf-8"))
         if data is None:
+            self._logger.info("URL: %s", request.get_full_url())
+            self._logger.debug("headers: %s", request.headers)
             response = urllib.request.urlopen(request)
             self.message = json.loads(response.read().decode("utf-8"))
         else:
             request.add_header("Content-Type", "application/json; charset=utf-8")
             data = json.dumps(data).encode("utf-8")
             request.add_header("Content-Length", len(data))
+            self._logger.info("URL: %s", request.get_full_url())
+            self._logger.debug("headers: %s", request.headers)
+            self._logger.debug("data: %s", data)
             response = urllib.request.urlopen(request, data=data)
+        status = response.getcode()
+        if (status == 200 or status == 201):
+            self._logger.info("response: %s", self.message)
+        else:
+            self.logger.error("response: %s", self.message)
 
     def _account_info(self, fields="positions,orders"):
         """Get account information.
@@ -212,24 +241,6 @@ class TDAmeritrade:
                 }
             ]
         }
-#        {
-#  "orderType": "LIMIT",
-#  "session": "NORMAL",
-#  "duration": "DAY",
-#  "orderStrategyType": "SINGLE",
-#  "price": 170,
-#  "orderLegCollection": [
-#    {
-#      "instruction": "Buy",
-#      "quantity": 15,
-#      "instrument": {
-#        "symbol": "QQQ",
-#        "assetType": "EQUITY"
-#      }
-#    }
-#  ]
-#}
-        print(data)
         self._send_request(url, data=data)
 
     def get_price_history(self, symbol=None, period_type="month", period="3", frequency_type="daily",\
@@ -257,6 +268,7 @@ class TDAmeritrade:
         symbol_url = "%2C".join(symbols)
         url = "marketdata/quotes?symbol={}".format(symbol_url)
         self._send_request(url)
+        return self.message
 
 
 def test():
@@ -273,7 +285,7 @@ def test():
     #app.create_saved_order(symbol="SPYG", price=1, quantity=1, instruction="Buy")
     #print(app.get_price_history(symbol="SPYV"))
     #app.get_quotes(["SPYV", "SPYG"])
-    app.place_order(symbol="SPYV", price=20.16, quantity=2, instruction="Buy")
+    #app.place_order(symbol="SPYV", price=20.16, quantity=2, instruction="Buy")
     #print(app.message)
 
 if __name__ == "__main__":
