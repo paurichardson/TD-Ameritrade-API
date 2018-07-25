@@ -1,5 +1,14 @@
 """
-Example to retrieve data from TD Ameritrade API
+Module to facilitate working with TDAmeritrades
+web based API.
+
+Example:
+    >>td = TDAmeritrade("account_no.txt", "oAuth.txt")
+    >>td.get_watchlist()
+
+Class:
+    TDAmeritrade
+
 """
 import urllib.request
 import time
@@ -102,13 +111,14 @@ class TDAmeritrade:
         else:
             self._logger.error("response: %s", self.message)
 
-    def _account_info(self, fields="positions,orders"):
+    def get_account_info(self, fields="positions,orders"):
         """Get account information.
         """
         url = "accounts/{}?fields={}".format(self.account_no, fields)
         self._send_request(url)
+        return self.message
 
-    def _orders(self, max_results=100, from_date=None, to_date=None,
+    def get_orders(self, max_results=100, from_date=None, to_date=None,
                 order_status="WORKING"):
         """Get order information.
         order_status (str): Most likely FILLED | WORKING
@@ -129,8 +139,9 @@ class TDAmeritrade:
                     .format(self.account_no, max_results, from_date, to_date,
                             order_status)
         self._send_request(url)
+        return self.message
 
-    def _transactions(self, trans_type="TRADE", from_date=None, to_date=None,
+    def get_transactions(self, trans_type="TRADE", from_date=None, to_date=None,
                       symbol="SPYG"):
         """Get transactions.
         """
@@ -148,18 +159,21 @@ class TDAmeritrade:
                     .format(self.account_no, trans_type, symbol, from_date,
                             to_date)
         self._send_request(url)
+        return self.message
 
     def get_watchlists(self):
         """Get all watchlists in account.
         """
         url = "accounts/{}/watchlists".format(self.account_no)
         self._send_request(url)
+        return self.message
 
     def get_watchlist(self, id="1148189253"):
         """Get watchlist. Defaults to CommissionFree.
         """
         url = "accounts/{}/watchlists/{}".format(self.account_no, id)
         self._send_request(url)
+        return self.message
 
     def get_refresh_token(self):
         """Get a refresh token.
@@ -175,7 +189,7 @@ class TDAmeritrade:
         to_date = datetime.strftime(datetime.today(), format="%Y-%m-%d")
         from_date = datetime.strftime(datetime.today() - timedelta(35),
                                       format="%Y-%m-%d")
-        self._orders(max_results=100, from_date=from_date, to_date=to_date,
+        orders = self.get_orders(max_results=100, from_date=from_date, to_date=to_date,
                      order_status="FILLED")
         orders = list()
         for order in self.message:
@@ -322,6 +336,7 @@ def test():
     # app.place_order(symbol="SPYV", price=20.16, quantity=2,
     #                 instruction="Buy")
     print(app.message)
+    ds
 
 
 if __name__ == "__main__":
