@@ -3,9 +3,6 @@ Module to facilitate working with TDAmeritrades
 web based API.
 
 Example:
-    >>td = TDAmeritrade("account_no.txt", "oAuth.txt")
-    >>td.get_watchlist()
-
 Class:
     TDAmeritrade
 
@@ -35,10 +32,34 @@ def dump_message(function):
 
 
 class TDAmeritrade:
-    """Class to create http urls to conform to the TDAmeritrade API.
+    """Class to for format http urls to conform to the TDAmeritrade API.  Sends
+    the http request (GET, PUT, or POST). Saves the response (if any) into
+    class variable message.
+
+    Class variables
+        message (str): Last request.response obtained from TD Ameritrade API
+        rpc.
+        logger (logger): Logger
+        account_no: TD Ameritrade account number to post rpcs
+        oath_hash: OAuth 2.0 certificate used to validate rpc
+
+    Example:
+    >>td = TDAmeritrade("account_no.txt", "oAuth.txt")
+    >>td.get_watchlist()
+
     """
     def __init__(self, filename_account, filename_oauth):
-        """Get account information.
+        """Setup a logger. Get the account number and OAuth2.0 certificate from
+        an external file that is necessary for the request url and request
+        headers. The account and OAuth2.0 certificate are not included as they
+        should not be shared.  These files should be included in the project
+        .gitignore to avoid posting.
+
+        Arguments:
+            filename_account (str): Name of the file containing the account
+            number.
+            filename_oath (str): Name of the file containing the OAuth
+            certificate.
         """
         self._setup_logging()
         self.account_no = self.get_account_number(filename_account)
@@ -66,7 +87,13 @@ class TDAmeritrade:
 
     @staticmethod
     def get_account_number(filename):
-        """Open and read the file containing the account number.
+        """Open and read the file containing the account number. This file
+        should be added to the project .gitignore, so the account number
+        is not compromised.
+
+        Arguments
+            filename_account (str): Name of the file containing the account
+            number.
         """
         with open(filename) as file_obj:
             account_no = file_obj.readlines()[0]
@@ -75,7 +102,13 @@ class TDAmeritrade:
 
     @staticmethod
     def get_oauth_hash(filename):
-        """Open and read the file containing the OAuth.
+        """Open and read the file containing the OAuth. This file
+        should be added to the project .gitignore, so the account number
+        is not compromised.
+
+        Arguments
+            filename_oath (str): Name of the file containing the OAuth
+            certificate.
         """
         with open(filename) as file_obj:
             oauth_hash = file_obj.readlines()[0]
@@ -84,7 +117,14 @@ class TDAmeritrade:
 
 #    @print_message
     def _send_request(self, url, data=None):
-        """Send the request based on the base url plus the supplied url.
+        """Make the rpc. Creates a request object from a base url contatenated
+        with the additional url information provided by the argument. Adds
+        headers, such as content type, length, ..., as well as the OAuth2.0
+        header. For PUT calls, converts the data object to JSON and encodes.
+
+        Arguments:
+        url (str): Specific url details to add to the base url for the request.
+        data (dict): Dictionary with details required for the request.
         """
         base_url = "https://api.tdameritrade.com/v1/"
         url = base_url + url
@@ -113,15 +153,24 @@ class TDAmeritrade:
 
     def get_account_info(self, fields="positions,orders"):
         """Get account information.
+
+        Arguments:
+            fields (list) optional: List of fields requested.
+            (e.g. ["positions", "orders"])
         """
         url = "accounts/{}?fields={}".format(self.account_no, fields)
         self._send_request(url)
         return self.message
 
     def get_orders(self, max_results=100, from_date=None, to_date=None,
-                order_status="WORKING"):
-        """Get order information.
-        order_status (str): Most likely FILLED | WORKING
+                   order_status="WORKING"):
+        """Get orders.
+
+        Arguments:
+            max_resutls (int): Maximum number of orders to return
+            from_date (obj datetime.date): Oldest date to retreive orders
+            to_date (obj datetime.date): Most current date to retreive orders
+            order_status (str): Most likely FILLED | WORKING
         """
         order_status = None
         if to_date is None:
@@ -336,7 +385,6 @@ def test():
     # app.place_order(symbol="SPYV", price=20.16, quantity=2,
     #                 instruction="Buy")
     print(app.message)
-    ds
 
 
 if __name__ == "__main__":
